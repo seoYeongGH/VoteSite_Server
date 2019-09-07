@@ -36,8 +36,9 @@ public class UserServlet extends HttpServlet {
 		PrintWriter out = response.getWriter();
 		
 		String doing = request.getParameter("doing");
-		
+		System.out.println(doing);
 		if("chkId".equals(doing)) {
+			System.out.println("CHkID");
 			if(dao.chkIdDup(request.getParameter("id")))
 				out.print(DUP_ID);
 			else

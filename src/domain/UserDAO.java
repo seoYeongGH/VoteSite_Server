@@ -85,11 +85,11 @@ public class UserDAO {
 		try {
 			con = getConnection();
 
-			if (chkIdDup(id))
-				return DUP_ID;
-
 			if (chkUserDup(id, name, email))
 				return DUP_USER;
+
+			if (chkIdDup(id))
+				return DUP_ID;
 
 			String sql = "select max(code) from usertable";
 			PreparedStatement pstmt = con.prepareStatement(sql);
