@@ -20,122 +20,136 @@ public class UserDAO {
 		try {
 			DriverManager.registerDriver(new oracle.jdbc.driver.OracleDriver());
 			System.out.println("드라이버 로드 성공");
-		}catch(SQLException e) {
+		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
 	}
-	
+
 	private Connection getConnection() {
 		DataSource ds = null;
 		Connection con = null;
-		
+
 		try {
 			Context ctx = new InitialContext();
-			ds = (DataSource)ctx.lookup("java:comp/env/jdbc/Oracle");
+			ds = (DataSource) ctx.lookup("java:comp/env/jdbc/Oracle");
 			con = ds.getConnection();
-		}catch(Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return con;
 	}
-	
+
 	private void closeConnection(Connection con) {
-		if(con != null) {
+		if (con != null) {
 			try {
 				con.close();
-			}catch(Exception e) {}
+			} catch (Exception e) {
+			}
 		}
-		
+
 		return;
 	}
-	
-	public int insertUser(String id, String pw, String name, String email) {
+
+	public boolean chkIdDup(String id) {
 		Connection con = null;
-		int flag;
-		
+		boolean flag = false;
+
 		try {
 			con = getConnection();
-			
-			flag = chkUserDup(id,name,email);
-			
-			if(flag == SUCCESS) {
-				String sql = "select max(code) from usertable";
-				PreparedStatement pstmt = con.prepareStatement(sql);
-				
-				int code;
-				
-				ResultSet rs = pstmt.executeQuery();
-				if(rs.next()) {
-					code = rs.getInt(1)+1;
-				}
-				else {
-					return ERR;
-				}
-				
-				sql = "insert into usertable values(?,?,?,?,?,?)";
-			
-				pstmt = con.prepareStatement(sql);
-				pstmt.setInt(1, code);
-				pstmt.setString(2, id);
-				pstmt.setString(3, pw);
-				pstmt.setString(4, name);
-				pstmt.setString(5, email);
-				pstmt.setInt(6, 0);
-				pstmt.executeQuery();
-			}
-			
-		}catch(Exception e) {
-			System.out.println("INSERT_USER_EXP: "+e.getMessage());
-			flag = ERR;
-		}finally {
+			String sql = "select code from usertable where id=?";
+
+			PreparedStatement pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, id);
+
+			ResultSet rs = pstmt.executeQuery();
+
+			if (rs.next())
+				flag = true;
+
+			else
+				flag = false;
+		} catch (Exception e) {
+			System.out.println("CHK_ID_EXP: " + e.toString());
+		} finally {
 			closeConnection(con);
 		}
-		
+
 		return flag;
 	}
-	
-	private int chkUserDup(String id, String name, String email) {
+
+	public int insertUser(String id, String pw, String name, String email) {
 		Connection con = null;
-		int flag=0;
-		
+		int flag = SUCCESS;
+
 		try {
 			con = getConnection();
-			
-			String sql = "select code from usertable where email=? and name=?";
-			
-			PreparedStatement pstmt = con.prepareStatement(sql);
-			pstmt.setString(1,email);
-			pstmt.setString(2, name);
-			
-			ResultSet rs = pstmt.executeQuery();
-			
-			if(rs.next()) {
-				closeConnection(con);
+
+			if (chkIdDup(id))
+				return DUP_ID;
+
+			if (chkUserDup(id, name, email))
 				return DUP_USER;
+
+			String sql = "select max(code) from usertable";
+			PreparedStatement pstmt = con.prepareStatement(sql);
+
+			int code;
+
+			ResultSet rs = pstmt.executeQuery();
+			if (rs.next()) {
+				code = rs.getInt(1) + 1;
+			} else {
+				return ERR;
 			}
-			
-			sql = "select code from usertable where id=?";
-			
+
+			sql = "insert into usertable values(?,?,?,?,?,?)";
+
 			pstmt = con.prepareStatement(sql);
-			pstmt.setString(1, id);
-			
-			rs = pstmt.executeQuery();
-			
-			if(rs.next()) {
-				flag =  DUP_ID;
-			}
-			else {
-				flag = SUCCESS;
-			}
-			
-		}catch(Exception e) {
-			System.out.println("CHK_USER_DATA_EXP: "+e.getMessage());
-			}
-		finally {
+			pstmt.setInt(1, code);
+			pstmt.setString(2, id);
+			pstmt.setString(3, pw);
+			pstmt.setString(4, name);
+			pstmt.setString(5, email);
+			pstmt.setInt(6, 0);
+			pstmt.executeQuery();
+
+		} catch (Exception e) {
+			System.out.println("INSERT_USER_EXP: " + e.getMessage());
+			flag = ERR;
+		} finally {
 			closeConnection(con);
 		}
-		
+
+		return flag;
+	}
+
+	private boolean chkUserDup(String id, String name, String email) {
+		Connection con = null;
+		boolean flag = false;
+
+		try {
+			con = getConnection();
+
+			String sql = "select code from usertable where email=? and name=?";
+
+			PreparedStatement pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, email);
+			pstmt.setString(2, name);
+
+			ResultSet rs = pstmt.executeQuery();
+
+			if (rs.next())
+				flag = true;
+			else
+				flag = false;
+
+		} catch (Exception e) {
+			System.out.println("CHK_USER_DATA_EXP: " + e.getMessage());
+		} finally {
+			closeConnection(con);
+		}
+
 		return flag;
 	}
 }
